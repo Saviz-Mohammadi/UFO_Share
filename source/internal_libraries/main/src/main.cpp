@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "discoverer.hpp"
 
 #ifdef QT_DEBUG
     #include "logger.hpp"
@@ -21,6 +22,11 @@ int main(int argc, char *argv[])
 
     // Load main.qml to start the engine. (Relative path from executable)
     engine.load("./resources/qml/main.qml");
+
+    Discoverer discoverer;
+    discoverer.start_listening();
+    discoverer.send_signal();
+
 
     // Launch Event loop.
     return application.exec();
