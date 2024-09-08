@@ -1,35 +1,86 @@
-#include "main.hpp"
+#include <QCoreApplication>
+#include <QDebug>
 #include "discoverer.hpp"
+
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+
+    BluetoothManager manager;
+
+    return app.exec();
+}
+
+
+ #include "main.hpp"
+// #include "discoverer.hpp"
 
 #ifdef QT_DEBUG
     #include "logger.hpp"
 #endif
 
-int main(int argc, char *argv[])
-{
-    QGuiApplication application(argc, argv);
-    QQmlApplicationEngine engine;
+// #include <QApplication>
+// #include <QListWidget>
+// #include <QMainWindow>
+// #include <QProcess>
+// #include <QStringList>
+// #include <QJsonDocument>
+// #include <QJsonArray>
+// #include <QJsonValue>
+// #include <QDebug>
 
-    registerTypes();
-    setupThemeSystem();
-    chooseFirstTheme();
-    readCustomFonts(application);
-    setGlobalFont(application);
+// QString runPythonScript(const QString &scriptPath) {
+//     QProcess process;
+//     process.start("python3", QStringList() << scriptPath);
+//     if (!process.waitForStarted()) {
+//         qWarning() << "Failed to start process";
+//         return QString();
+//     }
+//     if (!process.waitForFinished()) {
+//         qWarning() << "Process failed to finish";
+//         return QString();
+//     }
+//     return process.readAllStandardOutput();
+// }
 
-    // You may face issues when using Wayland.
-    QGuiApplication::setWindowIcon(QIcon("./resources/icons/Application icons/ufo.png"));
+// int main(int argc, char *argv[])
+// {
+//     QGuiApplication application(argc, argv);
+//     QQmlApplicationEngine engine;
 
-    // Load main.qml to start the engine. (Relative path from executable)
-    engine.load("./resources/qml/main.qml");
+//     registerTypes();
+//     setupThemeSystem();
+//     chooseFirstTheme();
+//     readCustomFonts(application);
+//     setGlobalFont(application);
 
-    UdpClient *client = new UdpClient(nullptr);
-    client->startListening(45454);
-    client->sendMessage("REQUEST");
+//     // You may face issues when using Wayland.
+//     QGuiApplication::setWindowIcon(QIcon("./resources/icons/Application icons/ufo.png"));
 
+//     // Load main.qml to start the engine. (Relative path from executable)
+//     engine.load("./resources/qml/main.qml");
 
-    // Launch Event loop.
-    return application.exec();
-}
+//     QString scriptPath = "./resources/python/scanner.py"; // Path to your Python script
+//     QString output = runPythonScript(scriptPath);
+
+//     if (output.isEmpty()) {
+//         qWarning() << "Failed to get output from Python script";
+//         return 1;
+//     }
+
+//     // Parse the JSON output
+//     QJsonDocument doc = QJsonDocument::fromJson(output.toUtf8());
+//     QJsonArray jsonArray = doc.array();
+
+//     QStringList devices;
+//     for (const QJsonValue &value : jsonArray) {
+//         devices << value.toString();
+//     }
+
+//     qDebug() << devices;
+
+//     // Launch Event loop.
+//     return application.exec();
+// }
 
 
 // You can register your C++ types to be visible to QML here.

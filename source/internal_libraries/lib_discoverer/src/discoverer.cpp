@@ -188,88 +188,126 @@
 
 #include "discoverer.hpp"
 
-UdpClient::UdpClient(QObject *parent)
+BluetoothManager::BluetoothManager(QObject *parent)
     : QObject(parent)
-    , groupAddress6(QStringLiteral("ff12::2115"))
+    , discoveryAgent(new QBluetoothDeviceDiscoveryAgent(this))
+    , server(new QBluetoothServer(QBluetoothServiceInfo::RfcommProtocol, this))
+    , bluetoothSocket(new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol, this))
+    , serviceUuid("00001101-0000-1000-8000-00805F9B34FB")
 {
-    connect(&udpSocket6, &QUdpSocket::readyRead, this, &UdpClient::processPendingDatagrams);
+    connect(server, &QBluetoothServer::newConnection, this, &BluetoothManager::handleNewConnection);
+
+    connect(
+        discoveryAgent,
+        &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
+        this,
+        &BluetoothManager::deviceDiscovered
+    );
+
+    connect(bluetoothSocket, &QBluetoothSocket::connected, this, [this]() {
+        qDebug() << "Connected to device!";
+        sendFile(bluetoothSocket, "path/to/your/file");
+    });
+
+    connect(bluetoothSocket, &QBluetoothSocket::disconnected, this, [this]() {
+        qDebug() << "Disconnected from device!";
+        //bluetoothSocket->deleteLater();
+        //bluetoothSocket = nullptr;
+    });
+
+    connect(bluetoothSocket, &QBluetoothSocket::errorOccurred, this, [this](QBluetoothSocket::SocketError error) {
+        qDebug() << "Socket error:" << bluetoothSocket->errorString();
+    });
+
+    connect(bluetoothSocket, &QBluetoothSocket::stateChanged, this, [this](QBluetoothSocket::SocketState state) {
+        qDebug() << "Socket state changed:" << static_cast<int>(state);
+    });
+
+    server->listen();  // Start listening for connections
+    discoveryAgent->start();
 }
 
-UdpClient::~UdpClient()
+BluetoothManager::~BluetoothManager()
 {
-    // Leave the multicast group if necessary
-    if (udpSocket6.state() == QAbstractSocket::BoundState)
-    {
-        udpSocket6.leaveMulticastGroup(groupAddress6);
-    }
-
-    udpSocket6.close();
+    discoveryAgent->stop();
+    server->close();
 }
 
-void UdpClient::sendMessage(const QString &type)
+void BluetoothManager::startDeviceDiscovery()
 {
-    QByteArray byteArray;
-    byteArray.clear();
-
-    QString host = QSysInfo::machineHostName();
-    QString message = QString("HOST:%1,TYPE:%2").arg(host, type);
-
-    byteArray.append(message.toUtf8());
-
-    QNetworkDatagram datagram(byteArray, groupAddress6, m_port);
-    udpSocket6.writeDatagram(datagram);
+    discoveryAgent->start();
 }
 
-void UdpClient::startListening(quint16 port)
+// In your local slot, read information about the found devices
+void BluetoothManager::deviceDiscovered(const QBluetoothDeviceInfo &device)
 {
-    m_port = port;
+    qDebug() << "Found new device:" << device.name() << '(' << device.address().toString() << ')' << "\n";
 
-    udpSocket6.bind(QHostAddress(QHostAddress::AnyIPv6), port);
+    // Here you can call discoveredDevices() and refresh your list to QML
+    // qDebug() << "New list: ";
 
+    // for(const QBluetoothDeviceInfo& device : discoveryAgent->discoveredDevices())
+    // {
+    //     qDebug() << device.name();
+    // }
 
-    if (!udpSocket6.joinMulticastGroup(groupAddress6))
-    {
-        qDebug() << "Failed to join multicast group:" << groupAddress6.toString();
-    }
+    connectToDevice(device);
 }
 
-void UdpClient::processPendingDatagrams()
+void BluetoothManager::connectToDevice(const QBluetoothDeviceInfo &device)
 {
-    while (udpSocket6.hasPendingDatagrams())
-    {
-        QNetworkDatagram datagram = udpSocket6.receiveDatagram();
+    bluetoothSocket->connectToService(device.address(), serviceUuid, QIODevice::ReadWrite);
+}
 
-        QStringList parts = QString::fromUtf8(datagram.data()).split(",");
+void BluetoothManager::disconnectDevice()
+{
+    bluetoothSocket->disconnect();
+}
 
-        QString hostPart = parts.value(0);
-        QString typePart = parts.value(1);
+void BluetoothManager::sendFile(QBluetoothSocket *socket, const QString &filePath)
+{
+    bluetoothSocket->write("Sending signal");
+    // QFile file(filePath);
+    // if (!file.open(QIODevice::ReadOnly)) {
+    //     qDebug() << "Failed to open file:" << file.errorString();
+    //     return;
+    // }
 
-        QString host = hostPart.section(":", 1, 1);
-        QString type = typePart.section(":", 1, 1);
+    // QByteArray fileData = file.readAll();
+    // qint64 bytesWritten = socket->write(fileData);
+    // if (bytesWritten == -1) {
+    //     qDebug() << "Failed to write data to socket:" << socket->errorString();
+    // } else {
+    //     qDebug() << bytesWritten << "bytes written to socket.";
+    // }
 
-        if (type == "REQUEST")
-        {
-            sendMessage("RESPONSE");
-        }
-
-        else if (type == "RESPONSE")
-        {
-            if (!deviceMap.contains(host))
-            {
-                deviceMap.insert(host, datagram.senderAddress().toString());
-                qDebug() << "Added Host: " << host << " Address: " << datagram.senderAddress().toString();
-            }
-
-            qDebug() << deviceMap;
-        }
-
-        // else if (type == "DISCONNECTED") {
-        //     if (deviceMap.contains(host)) {
-        //         deviceMap.remove(host);
-        //         qDebug() << "Removed from map:" << host;
-        //     }
-        // }
+    // file.close();
+}
 
 
-    }
+void BluetoothManager::handleNewConnection()
+{
+    QBluetoothSocket *socket = server->nextPendingConnection();
+
+    connect(socket, &QBluetoothSocket::readyRead, this, [this, socket]() {
+        handleReadyRead(socket);
+    });
+
+    connect(socket, &QBluetoothSocket::disconnected, socket, &QObject::deleteLater);
+}
+
+void BluetoothManager::handleReadyRead(QBluetoothSocket *socket)
+{
+    QByteArray data = socket->readAll();
+    qDebug() << "Received data:" << data;
+
+    // Example of saving received data to a file
+    // QFile file("received_file");
+    // if (file.open(QIODevice::WriteOnly)) {
+    //     file.write(data);
+    //     file.close();
+    //     qDebug() << "File saved successfully.";
+    // } else {
+    //     qDebug() << "Failed to save file:" << file.errorString();
+    // }
 }

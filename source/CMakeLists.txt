@@ -44,7 +44,8 @@ find_package(Qt6 6.7.2 COMPONENTS
     QuickControls2
     Network
     Sql
-    Multimedia)
+    Multimedia
+    Bluetooth)
 
 # Add more Qt Components as needed...
 
@@ -287,7 +288,8 @@ target_link_libraries(${EXECUTABLE_NAME}
     Qt6::QuickControls2
     Qt6::Network
     Qt6::Sql
-    Qt6::Multimedia)
+    Qt6::Multimedia
+    Qt6::Bluetooth)
 
 
 

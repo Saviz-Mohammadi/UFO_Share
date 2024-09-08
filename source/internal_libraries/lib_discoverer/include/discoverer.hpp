@@ -51,32 +51,41 @@
 #ifndef DISCOVERER_H
 #define DISCOVERER_H
 
-#include <QUdpSocket>
-#include <QHostAddress>
-#include <QNetworkDatagram>
-#include <QDebug>
-#include <QSysInfo>
-#include <QByteArray>
 
-class UdpClient : public QObject
+#include <QDebug>
+#include <QBluetoothDeviceDiscoveryAgent>
+#include <QBluetoothDeviceInfo>
+#include <QBluetoothServiceInfo>
+#include <QBluetoothSocket>
+#include <QBluetoothServer>
+#include <QBluetoothServiceInfo>
+#include <QDataStream>
+#include <QFile>
+
+
+class BluetoothManager : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit UdpClient(QObject *parent = nullptr);
-    ~UdpClient();
+    explicit BluetoothManager(QObject *parent = nullptr);
+    ~BluetoothManager();
 
-    void sendMessage(const QString &type);
-    void startListening(quint16 port);
+    void startDeviceDiscovery();
 
 private slots:
-    void processPendingDatagrams();
+    void deviceDiscovered(const QBluetoothDeviceInfo &device);
+    void connectToDevice(const QBluetoothDeviceInfo &device);
+    void disconnectDevice();
+    void sendFile(QBluetoothSocket *socket, const QString &filePath);
+    void handleNewConnection();
+    void handleReadyRead(QBluetoothSocket *socket);
 
 private:
-    quint16 m_port;
-    QUdpSocket udpSocket6;
-    QHostAddress groupAddress6;
-    QMap<QString, QString> deviceMap; // Map to store device names and IP addresses
+    QBluetoothDeviceDiscoveryAgent *discoveryAgent;
+    QBluetoothSocket *bluetoothSocket;
+    QBluetoothServer *server;
+    QBluetoothUuid serviceUuid; // Standard UUID for Serial Port Profile
 };
 
 #endif // DISCOVERER_H

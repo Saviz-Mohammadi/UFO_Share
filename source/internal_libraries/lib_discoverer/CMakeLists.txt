@@ -79,7 +79,8 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::QuickControls2
     Qt6::Network
     Qt6::Sql
-    Qt6::Multimedia)
+    Qt6::Multimedia
+    Qt6::Bluetooth)
 
 # [[ ----------------------------------------------------------------------- ]]
 # [[ ----------------------------------------------------------------------- ]]
