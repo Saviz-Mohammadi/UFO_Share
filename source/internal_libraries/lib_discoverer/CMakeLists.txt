@@ -64,12 +64,7 @@ target_sources(${PROJECT_NAME}
 
 
 
-target_include_directories(${PROJECT_NAME}
-	
-    PUBLIC
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${FETCHCONTENT_BASE_DIR}/asio-src/asio/include/")
 
 
 
@@ -105,6 +100,13 @@ FetchContent_Declare(asio
 
 FetchContent_MakeAvailable(asio)
 
+
+target_include_directories(${PROJECT_NAME}
+
+    PUBLIC
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${FETCHCONTENT_BASE_DIR}/asio-src/asio/include/")
 
 
 # [[ Internal Library ]]

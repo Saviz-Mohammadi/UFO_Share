@@ -5,7 +5,6 @@
     #include "logger.hpp"
 #endif
 
-
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
@@ -23,9 +22,9 @@ int main(int argc, char *argv[])
     // Load main.qml to start the engine. (Relative path from executable)
     engine.load("./resources/qml/main.qml");
 
-    Discoverer discoverer;
-    discoverer.start_listening();
-    discoverer.send_signal();
+    UdpClient *client = new UdpClient(nullptr);
+    client->startListening(5000);
+    client->sendMessage("REQUEST");
 
 
     // Launch Event loop.
