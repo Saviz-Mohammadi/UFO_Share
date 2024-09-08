@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     engine.load("./resources/qml/main.qml");
 
     UdpClient *client = new UdpClient(nullptr);
-    client->startListening(5000);
+    client->startListening(45454);
     client->sendMessage("REQUEST");
 
 

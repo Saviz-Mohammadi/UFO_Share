@@ -51,18 +51,12 @@
 #ifndef DISCOVERER_H
 #define DISCOVERER_H
 
-#include <QSysInfo>
-#include <asio.hpp>
-#include <string>
-#include <array>
-#include <QMap>
-#include <QDebug>
-
-#include <QObject>
 #include <QUdpSocket>
 #include <QHostAddress>
-#include <QMap>
 #include <QNetworkDatagram>
+#include <QDebug>
+#include <QSysInfo>
+#include <QByteArray>
 
 class UdpClient : public QObject
 {
@@ -75,15 +69,13 @@ public:
     void sendMessage(const QString &type);
     void startListening(quint16 port);
 
-signals:
-    void messageReceived(const QString &message);
-
 private slots:
     void processPendingDatagrams();
 
 private:
-    QUdpSocket *udpSocket;
-    quint64 m_port;
+    quint16 m_port;
+    QUdpSocket udpSocket6;
+    QHostAddress groupAddress6;
     QMap<QString, QString> deviceMap; // Map to store device names and IP addresses
 };
 

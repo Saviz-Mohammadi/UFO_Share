@@ -1,4 +1,3 @@
-#include "discoverer.hpp"
 // Discoverer::Discoverer()
 //     : listenerSocket(context, asio::ip::udp::v4())
 //     , senderSocket(context, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0))
@@ -187,51 +186,60 @@
 
 
 
-
-
-#include <QHostInfo>
-#include <QByteArray>
-#include <QDebug>
+#include "discoverer.hpp"
 
 UdpClient::UdpClient(QObject *parent)
-    : QObject(parent), udpSocket(new QUdpSocket(this))
+    : QObject(parent)
+    , groupAddress6(QStringLiteral("ff12::2115"))
 {
-    connect(udpSocket, &QUdpSocket::readyRead, this, &UdpClient::processPendingDatagrams);
+    connect(&udpSocket6, &QUdpSocket::readyRead, this, &UdpClient::processPendingDatagrams);
 }
 
 UdpClient::~UdpClient()
 {
-    delete udpSocket;
+    // Leave the multicast group if necessary
+    if (udpSocket6.state() == QAbstractSocket::BoundState)
+    {
+        udpSocket6.leaveMulticastGroup(groupAddress6);
+    }
+
+    udpSocket6.close();
 }
 
 void UdpClient::sendMessage(const QString &type)
 {
     QByteArray byteArray;
+    byteArray.clear();
 
     QString host = QSysInfo::machineHostName();
     QString message = QString("HOST:%1,TYPE:%2").arg(host, type);
 
-    byteArray.append(host.toUtf8());
     byteArray.append(message.toUtf8());
 
-    QNetworkDatagram datagram(byteArray, QHostAddress::Broadcast, m_port);
-
-    udpSocket->writeDatagram(datagram);
+    QNetworkDatagram datagram(byteArray, groupAddress6, m_port);
+    udpSocket6.writeDatagram(datagram);
 }
 
 void UdpClient::startListening(quint16 port)
 {
     m_port = port;
-    udpSocket->bind(port);
+
+    udpSocket6.bind(QHostAddress(QHostAddress::AnyIPv6), port);
+
+
+    if (!udpSocket6.joinMulticastGroup(groupAddress6))
+    {
+        qDebug() << "Failed to join multicast group:" << groupAddress6.toString();
+    }
 }
 
 void UdpClient::processPendingDatagrams()
 {
-    while (udpSocket->hasPendingDatagrams()) {
-        QNetworkDatagram datagram = udpSocket->receiveDatagram();
+    while (udpSocket6.hasPendingDatagrams())
+    {
+        QNetworkDatagram datagram = udpSocket6.receiveDatagram();
 
-        QString message = QString::fromUtf8(datagram.data());
-        QStringList parts = message.split(",");
+        QStringList parts = QString::fromUtf8(datagram.data()).split(",");
 
         QString hostPart = parts.value(0);
         QString typePart = parts.value(1);
@@ -239,26 +247,29 @@ void UdpClient::processPendingDatagrams()
         QString host = hostPart.section(":", 1, 1);
         QString type = typePart.section(":", 1, 1);
 
-        if (type == "REQUEST") {
+        if (type == "REQUEST")
+        {
             sendMessage("RESPONSE");
         }
 
-        else if (type == "RESPONSE") {
-            if (!deviceMap.contains(host)) {
+        else if (type == "RESPONSE")
+        {
+            if (!deviceMap.contains(host))
+            {
                 deviceMap.insert(host, datagram.senderAddress().toString());
                 qDebug() << "Added Host: " << host << " Address: " << datagram.senderAddress().toString();
             }
+
+            qDebug() << deviceMap;
         }
 
-        else if (type == "DISCONNECTED") {
-            if (deviceMap.contains(host)) {
-                deviceMap.remove(host);
-                qDebug() << "Removed from map:" << host;
-            }
-        }
+        // else if (type == "DISCONNECTED") {
+        //     if (deviceMap.contains(host)) {
+        //         deviceMap.remove(host);
+        //         qDebug() << "Removed from map:" << host;
+        //     }
+        // }
 
-        qDebug() << deviceMap;
 
-        emit messageReceived(message);
     }
 }
