@@ -1,11 +1,26 @@
 #include <QCoreApplication>
 #include <QDebug>
+#include <QTimer>
 #include "discoverer.hpp"
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
-    BluetoothManager manager;
+    Discoverer discoverer;
+
+    // Set the device name (you could make this configurable)
+    // QString deviceName = "MyDevice";
+    // discoverer.sendAdvertisement(deviceName);
+
+    // Discover other devices
+    //discoverer.sendDiscoveryRequest();
+
+    // Optional: periodically send advertisements
+    QTimer timer;
+    QObject::connect(&timer, &QTimer::timeout, [&](){
+        discoverer.sendRequest();
+    });
+    timer.start(5000); // Send advertisement every 10 seconds
 
     return app.exec();
 }
