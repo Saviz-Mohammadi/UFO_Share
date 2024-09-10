@@ -1,8 +1,14 @@
 #include "discoverer.hpp"
+#include <QSysInfo>
 
 Discoverer::Discoverer(QObject *parent)
     : QObject(parent)
-    , groupAddress4(QStringLiteral("239.255.43.21"))
+    , groupAddress4(QStringLiteral("239.255.255.250")) // I don't know why, but it seems like this address was the key to making the project work.
+    // I don't understand, everything is correct to the finest detail, but just change the address made everything work. What is so special about this one?
+
+    // Here is the reason apparntely:
+    // The address 239.255.255.250 is a well-known multicast address that many devices and services are configured to listen to by default. It is used for SSDP, which is a protocol used for service discovery on local networks. Many devices, routers, and services are pre-configured to communicate using this address, making it a reliable choice for multicast communication in many environments.
+
     , groupAddress6(QStringLiteral("ff12::2115"))
 {
     //qDebug() << "Listening for multicast messages on both IPv4 and IPv6";
@@ -29,7 +35,7 @@ Discoverer::~Discoverer()
 
 void Discoverer::sendResponse(const QString &name)
 {
-    QByteArray data = QString("RESPONSE:%1:%2").arg(name, QHostAddress(QHostAddress::LocalHost).toString()).toUtf8();
+    QByteArray data = QString("RESPONSE:%1:%2").arg(QSysInfo::machineHostName(), QHostAddress(QHostAddress::LocalHost).toString()).toUtf8();
 
     // Send data to the IPv4 multicast group
     udpSocket4.writeDatagram(data, groupAddress4, 45454);
