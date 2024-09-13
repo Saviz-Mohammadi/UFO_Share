@@ -353,7 +353,8 @@ target_link_libraries(${EXECUTABLE_NAME}
     PRIVATE
     "Lib_AppTheme"
     "Lib_Logger"
-    "Lib_Discoverer")
+    "Lib_Discoverer"
+    "Lib_PeerTransfer")
 
 # [[ ----------------------------------------------------------------------- ]]
 # [[ ----------------------------------------------------------------------- ]]

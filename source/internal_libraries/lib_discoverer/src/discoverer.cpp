@@ -46,6 +46,19 @@ void Discoverer::sendResponse(const QString &name)
     //qDebug() << "REQUESTment sent: " << name;
 }
 
+// This method is used to notify the network that the current device is going to close and be disconnected.
+// Any devices recieving this message, should remove this device from their list.
+void Discoverer::sendRemove(const QString &name)
+{
+    QByteArray data = QString("REMOVE:%1:%2").arg(QSysInfo::machineHostName(), QHostAddress(QHostAddress::LocalHost).toString()).toUtf8();
+
+    // Send data to the IPv4 multicast group
+    udpSocket4.writeDatagram(data, groupAddress4, 45454);
+
+    // Send data to the IPv6 multicast group
+    udpSocket6.writeDatagram(data, groupAddress6, 45454);
+}
+
 void Discoverer::sendRequest()
 {
     QByteArray request = "REQUEST";
@@ -57,6 +70,9 @@ void Discoverer::sendRequest()
     //qDebug() << "Discovery request sent.";
 }
 
+
+// TODO (Saviz): For now this is fine, but usually it is better for the key to be as unique as possible.
+// So, I think it is better to have the key be ip address instead of name, just in case someone uses the same name for all of their devices.
 void Discoverer::processPendingDatagrams()
 {
     QByteArray datagram;
@@ -72,11 +88,30 @@ void Discoverer::processPendingDatagrams()
             if (parts.size() == 2) {
                 QString name = parts[0];
                 QString ip = parts[1];
-                qDebug() << "Received RESPONSE from" << name << "at" << ip;
+                //qDebug() << "Received RESPONSE from" << name << "at" << ip;
+
+                if(!m_Devices.contains(name))
+                {
+                    m_Devices.insert(name, ip);
+                }
+
+                qDebug() << m_Devices;
             }
         } else if (message == "REQUEST") {
             sendResponse("MyDevice"); // Replace with actual device name
+        } else if (message == "REMOVE") {
+            QStringList parts = message.mid(10).split(':');
+            if (parts.size() == 2) {
+                QString name = parts[0];
+                //QString ip = parts[1];
+                //qDebug() << "Received RESPONSE from" << name << "at" << ip;
+
+                m_Devices.remove(name);
+
+                qDebug() << m_Devices;
+            }
         }
+
     }
 
     // Process IPv6 datagrams
@@ -89,10 +124,28 @@ void Discoverer::processPendingDatagrams()
             if (parts.size() == 2) {
                 QString name = parts[0];
                 QString ip = parts[1];
-                qDebug() << "Received RESPONSE from" << name << "at" << ip;
+                //qDebug() << "Received RESPONSE from" << name << "at" << ip;
+
+                if(!m_Devices.contains(name))
+                {
+                    m_Devices.insert(name, ip);
+                }
+
+                qDebug() << m_Devices;
             }
         } else if (message == "REQUEST") {
             sendResponse("MyDevice"); // Replace with actual device name
+        } else if (message == "REMOVE") {
+            QStringList parts = message.mid(10).split(':');
+            if (parts.size() == 2) {
+                QString name = parts[0];
+                //QString ip = parts[1];
+                //qDebug() << "Received RESPONSE from" << name << "at" << ip;
+
+                m_Devices.remove(name);
+
+                qDebug() << m_Devices;
+            }
         }
     }
 }

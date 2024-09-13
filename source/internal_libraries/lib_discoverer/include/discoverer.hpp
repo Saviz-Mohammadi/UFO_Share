@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QDebug>
+#include <QMap>
 #include <QHostAddress>
 #include <QUdpSocket>
 #include <QtNetwork>
@@ -15,8 +16,13 @@ public:
     explicit Discoverer(QObject *parent = nullptr);
     ~Discoverer();
 
+private:
+    QMap<QString, QString> m_Devices;
+
+public:
     void sendRequest();
     void sendResponse(const QString &name);
+    void sendRemove(const QString &name);
     void processPendingDatagrams();
 
 private:
